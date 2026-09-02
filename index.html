@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Roller Club - Entraînements</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f4f5f7;
+        color: #222;
+    }
+
+    header {
+        background: #222;
+        color: white;
+        padding: 18px 20px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+
+    header .titre {
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    header .profil {
+        margin-top: 5px;
+        font-size: 14px;
+        opacity: .85;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+    }
+
+    /* LOGIN */
+
+    #login {
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    }
+
+    .login-box {
+        width: 100%;
+        max-width: 400px;
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 20px rgba(0,0,0,.12);
+        text-align: center;
+    }
+
+    .login-box h1 {
+        margin-top: 0;
+    }
+
+    .login-box input {
+        width: 100%;
+        padding: 14px;
+        font-size: 18px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        margin: 15px 0;
+        text-align: center;
+    }
+
+    button {
+        border: 0;
+        border-radius: 8px;
+        padding: 12px 18px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .btn-login {
+        width: 100%;
+        background: #222;
+        color: white;
+    }
+
+    .btn-login:hover {
+        background: #444;
+    }
+
+    #loginErreur {
+        color: #c62828;
+        margin-top: 15px;
+        min-height: 20px;
+    }
+
+    /* APPLICATION */
+
+    #app {
+        display: none;
+    }
+
+    .barre-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        gap: 10px;
+    }
+
+    .btn-deconnexion {
+        background: #ddd;
+        color: #222;
+        font-size: 14px;
+    }
+
+    .jour {
+        margin-bottom: 25px;
+    }
+
+    .jour-titre {
+        font-size: 20px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        padding-left: 5px;
+    }
+
+    .creneau-card {
+        background: white;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        cursor: pointer;
+        transition: transform .1s;
+    }
+
+    .creneau-card:hover {
+        transform: translateY(-1px);
+    }
+
+    .creneau-haut {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .heure {
+        font-size: 19px;
+        font-weight: bold;
+    }
+
+    .nb {
+        font-size: 13px;
+        color: #777;
+    }
+
+    .entraineurs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+        margin-top: 12px;
+    }
+
+    .bulle {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #222;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: bold;
+    }
+
+    .bulle.moi {
+        background: #1976d2;
+        box-shadow: 0 0 0 3px #bbdefb;
+    }
+
+    .aucun {
+        color: #aaa;
+        font-size: 14px;
+        font-style: italic;
+    }
+
+    .chargement {
+        text-align: center;
+        padding: 50px 20px;
+        color: #777;
+    }
+
+    .erreur {
+        background: #ffebee;
+        color: #c62828;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    /* MODAL */
+
+    #modalFond {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.5);
+        z-index: 100;
+        padding: 20px;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal {
+        background: white;
+        width: 100%;
+        max-width: 450px;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 10px 40px rgba(0,0,0,.3);
+    }
+
+    .modal h2 {
+        margin-top: 0;
+    }
+
+    .modal-info {
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .liste-entraineurs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 25px;
+    }
+
+    .modal-bulle {
+        padding: 8px 12px;
+        border-radius: 20px;
+        background: #eee;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .modal-bulle.moi {
+        background: #1976d2;
+        color: white;
+    }
+
+    .boutons {
+        display: flex;
+        gap: 10px;
+    }
+
+    .boutons button {
+        flex: 1;
+    }
+
+    .btn-present {
+        background: #2e7d32;
+        color: white;
+    }
+
+    .btn-absent {
+        background: #c62828;
+        color: white;
+    }
+
+    .btn-fermer {
+        width: 100%;
+        margin-top: 10px;
+        background: #ddd;
+    }
+
+    @media(max-width: 500px) {
+        .container {
+            padding: 12px;
+        }
+
+        header {
+            padding: 15px;
+        }
+
+        .creneau-card {
+            padding: 13px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<!-- ========================= -->
+<!-- CONNEXION -->
+<!-- ========================= -->
+
+<div id="login">
+
+    <div class="login-box">
+
+        <h1>🛼 Roller Club</h1>
+
+        <p>Entrez votre mot de passe</p>
+
+        <input
+            type="password"
+            id="motDePasse"
+            placeholder="Mot de passe"
+            autocomplete="off"
+            onkeydown="if(event.key === 'Enter') connexion()"
+        >
+
+        <button class="btn-login" onclick="connexion()">
+            Se connecter
+        </button>
+
+        <div id="loginErreur"></div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================= -->
+<!-- APPLICATION -->
+<!-- ========================= -->
+
+<div id="app">
+
+    <header>
+
+        <div class="titre">
+            🛼 Roller Club
+        </div>
+
+        <div class="profil" id="profil"></div>
+
+    </header>
+
+    <div class="container">
+
+        <div class="barre-actions">
+
+            <div>
+                <strong>Mes entraînements</strong>
+            </div>
+
+            <button
+                class="btn-deconnexion"
+                onclick="deconnexion()">
+                Déconnexion
+            </button>
+
+        </div>
+
+        <div id="message"></div>
+
+        <div id="contenu">
+
+            <div class="chargement">
+                Chargement...
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ========================= -->
+<!-- MODAL -->
+<!-- ========================= -->
+
+<div id="modalFond">
+
+    <div class="modal">
+
+        <h2 id="modalTitre"></h2>
+
+        <div class="modal-info" id="modalInfo"></div>
+
+        <strong>Entraîneurs :</strong>
+
+        <div
+            class="liste-entraineurs"
+            id="modalEntraineurs">
+        </div>
+
+        <div class="boutons">
+
+            <button
+                class="btn-present"
+                onclick="modifierPresence(true)">
+                ✓ Je suis présent
+            </button>
+
+            <button
+                class="btn-absent"
+                onclick="modifierPresence(false)">
+                ✕ Je suis absent
+            </button>
+
+        </div>
+
+        <button
+            class="btn-fermer"
+            onclick="fermerModal()">
+            Fermer
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   CONFIGURATION SUPABASE
+   ========================================================= */
+
+const SUPABASE_URL =
+    "https://vmvwilwltepayklrwmci.supabase.co";
+
+/*
+ * Mets ici ta clé "Publishable" / "anon"
+ * de Supabase.
+ *
+ * NE PAS mettre une clé service_role ici.
+ */
+const SUPABASE_KEY =
+    "REMPLACE_PAR_TA_CLE_SUPABASE";
+
+
+const supabaseClient =
+    supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+/* =========================================================
+   VARIABLES
+   ========================================================= */
+
+let entraineurConnecte = null;
+
+let entraineurs = [];
+
+let entrainements = [];
+
+let creneauActif = null;
+
+
+/* =========================================================
+   DEMARRAGE
+   ========================================================= */
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+    const sauvegarde =
+        localStorage.getItem("roller_entraineur");
+
+    if (sauvegarde) {
+
+        try {
+
+            entraineurConnecte =
+                JSON.parse(sauvegarde);
+
+            await chargerApplication();
+
+        } catch(e) {
+
+            localStorage.removeItem("roller_entraineur");
+
+            afficherLogin();
+
+        }
+
+    } else {
+
+        afficherLogin();
+
+    }
+
+});
+
+
+/* =========================================================
+   AFFICHAGE LOGIN
+   ========================================================= */
+
+function afficherLogin() {
+
+    document.getElementById("login").style.display = "flex";
+
+    document.getElementById("app").style.display = "none";
+
+}
+
+
+/* =========================================================
+   CONNEXION
+   ========================================================= */
+
+async function connexion() {
+
+    const mdp =
+        document
+            .getElementById("motDePasse")
+            .value
+            .trim();
+
+    const erreur =
+        document.getElementById("loginErreur");
+
+    erreur.textContent = "";
+
+    if (!mdp) {
+
+        erreur.textContent =
+            "Veuillez entrer votre mot de passe.";
+
+        return;
+
+    }
+
+    try {
+
+        /*
+         * Recherche de l'entraîneur
+         * directement dans la table Entraineur.
+         */
+
+        const { data, error } =
+            await supabaseClient
+                .from("Entraineur")
+                .select("id,Nom,Mail,MdP,Pseudo")
+                .eq("MdP", mdp)
+                .maybeSingle();
+
+        if (error) {
+
+            console.error(error);
+
+            erreur.textContent =
+                "Erreur de connexion : " +
+                error.message;
+
+            return;
+
+        }
+
+        if (!data) {
+
+            erreur.textContent =
+                "Mot de passe incorrect.";
+
+            return;
+
+        }
+
+        entraineurConnecte = data;
+
+        /*
+         * On garde l'entraîneur en mémoire
+         * pour éviter de redemander le mot de passe.
+         */
+
+        localStorage.setItem(
+            "roller_entraineur",
+            JSON.stringify(data)
+        );
+
+        document
+            .getElementById("motDePasse")
+            .value = "";
+
+        await chargerApplication();
+
+    } catch(e) {
+
+        console.error(e);
+
+        erreur.textContent =
+            "Erreur inattendue.";
+
+    }
+
+}
+
+
+/* =========================================================
+   CHARGEMENT APPLICATION
+   ========================================================= */
+
+async function chargerApplication() {
+
+    document.getElementById("login").style.display = "none";
+
+    document.getElementById("app").style.display = "block";
+
+    document.getElementById("profil").textContent =
+        "Connecté : " +
+        (entraineurConnecte.Pseudo ||
+         entraineurConnecte.Nom ||
+         entraineurConnecte.id);
+
+    document.getElementById("contenu").innerHTML =
+        '<div class="chargement">Chargement...</div>';
+
+    try {
+
+        /*
+         * On récupère les entraîneurs.
+         */
+
+        const resultEntraineurs =
+            await supabaseClient
+                .from("Entraineur")
+                .select("id,Nom,Mail,MdP,Pseudo")
+                .order("id");
+
+        if (resultEntraineurs.error)
+            throw resultEntraineurs.error;
+
+        entraineurs =
+            resultEntraineurs.data || [];
+
+
+        /*
+         * On récupère TOUS les entraînements.
+         *
+         * Les créneaux affichés viennent exclusivement
+         * de cette table.
+         */
+
+        const resultEntrainements =
+            await supabaseClient
+                .from("Entrainement")
+                .select("id,Date,Créneau,Entraineur")
+                .order("Date")
+                .order("Créneau");
+
+        if (resultEntrainements.error)
+            throw resultEntrainements.error;
+
+        entrainements =
+            resultEntrainements.data || [];
+
+
+        afficherCreneaux();
+
+    } catch(e) {
+
+        console.error(e);
+
+        document.getElementById("contenu").innerHTML = `
+            <div class="erreur">
+                Erreur de chargement : ${esc(e.message)}
+            </div>
+        `;
+
+    }
+
+}
+
+
+/* =========================================================
+   AFFICHAGE DES CRENEAUX
+   ========================================================= */
+
+function afficherCreneaux() {
+
+    const contenu =
+        document.getElementById("contenu");
+
+    if (!entrainements.length) {
+
+        contenu.innerHTML = `
+            <div class="chargement">
+                Aucun entraînement dans la table Entrainement.
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    /*
+     * On regroupe les lignes par :
+     *
+     * Date + Créneau
+     *
+     * Exemple :
+     *
+     * 08/09/2026 | 17:00-18:30
+     *
+     * peut avoir plusieurs entraîneurs.
+     */
+
+    const groupes = new Map();
+
+
+    entrainements.forEach(row => {
+
+        const date =
+            String(row.Date ?? "");
+
+        const creneau =
+            String(row["Créneau"] ?? "");
+
+        const cle =
+            date + "||" + creneau;
+
+
+        if (!groupes.has(cle)) {
+
+            groupes.set(cle, {
+
+                date: date,
+
+                creneau: creneau,
+
+                lignes: []
+
+            });
+
+        }
+
+        groupes
+            .get(cle)
+            .lignes
+            .push(row);
+
+    });
+
+
+    /*
+     * Transformation en tableau.
+     */
+
+    const liste =
+        Array.from(groupes.values());
+
+
+    /*
+     * Tri par date puis créneau.
+     */
+
+    liste.sort((a, b) => {
+
+        const da = dateComparable(a.date);
+        const db = dateComparable(b.date);
+
+        if (da !== db)
+            return da - db;
+
+        return a.creneau.localeCompare(
+            b.creneau,
+            "fr",
+            {
+                numeric: true
+            }
+        );
+
+    });
+
+
+    /*
+     * Regroupement par date.
+     */
+
+    const jours = new Map();
+
+    liste.forEach(c => {
+
+        if (!jours.has(c.date))
+            jours.set(c.date, []);
+
+        jours.get(c.date).push(c);
+
+    });
+
+
+    let html = "";
+
+
+    jours.forEach((creneaux, date) => {
+
+        html += `
+            <div class="jour">
+
+                <div class="jour-titre">
+                    ${esc(formatDate(date))}
+                </div>
+        `;
+
+
+        creneaux.forEach(c => {
+
+            const ids =
+                c.lignes.map(
+                    row => String(row.Entraineur)
+                );
+
+
+            /*
+             * On enlève les éventuels doublons.
+             */
+
+            const idsUniques =
+                [...new Set(ids)];
+
+
+            let bulles = "";
+
+
+            if (idsUniques.length) {
+
+                bulles =
+                    idsUniques.map(id => {
+
+                        const moi =
+                            estMoi(id);
+
+                        return `
+                            <div
+                                class="bulle ${moi ? "moi" : ""}"
+                                title="${esc(id)}"
+                            >
+                                ${esc(id)}
+                            </div>
+                        `;
+
+                    }).join("");
+
+            } else {
+
+                bulles =
+                    `<span class="aucun">
+                        Aucun entraîneur
+                    </span>`;
+
+            }
+
+
+            html += `
+
+                <div
+                    class="creneau-card"
+                    onclick='ouvrirCreneau(${JSON.stringify(c)})'
+                >
+
+                    <div class="creneau-haut">
+
+                        <div class="heure">
+                            ${esc(c.creneau)}
+                        </div>
+
+                        <div class="nb">
+                            ${idsUniques.length}
+                            entraîneur${idsUniques.length > 1 ? "s" : ""}
+                        </div>
+
+                    </div>
+
+                    <div class="entraineurs">
+
+                        ${bulles}
+
+                    </div>
+
+                </div>
+
+            `;
+
+        });
+
+
+        html += `</div>`;
+
+    });
+
+
+    contenu.innerHTML = html;
+
+}
+
+
+/* =========================================================
+   OUVERTURE DU CRENEAU
+   ========================================================= */
+
+function ouvrirCreneau(creneau) {
+
+    creneauActif = creneau;
+
+
+    document.getElementById("modalTitre").textContent =
+        creneau.creneau;
+
+
+    document.getElementById("modalInfo").textContent =
+        formatDate(creneau.date);
+
+
+    const ids =
+        creneau.lignes.map(
+            row => String(row.Entraineur)
+        );
+
+
+    const idsUniques =
+        [...new Set(ids)];
+
+
+    const zone =
+        document.getElementById("modalEntraineurs");
+
+
+    if (!idsUniques.length) {
+
+        zone.innerHTML =
+            `<span class="aucun">
+                Aucun entraîneur inscrit
+            </span>`;
+
+    } else {
+
+        zone.innerHTML =
+            idsUniques.map(id => {
+
+                return `
+                    <div
+                        class="modal-bulle ${
+                            estMoi(id) ? "moi" : ""
+                        }"
+                    >
+                        ${esc(id)}
+                        ${estMoi(id) ? " (moi)" : ""}
+                    </div>
+                `;
+
+            }).join("");
+
+    }
+
+
+    document.getElementById("modalFond").style.display =
+        "flex";
+
+}
+
+
+/* =========================================================
+   MODIFICATION PRESENCE
+   ========================================================= */
+
+async function modifierPresence(present) {
+
+    if (!creneauActif || !entraineurConnecte)
+        return;
+
+
+    const idEntraineur =
+        String(entraineurConnecte.id);
+
+
+    try {
+
+        /*
+         * On cherche une éventuelle ligne existante
+         * pour cet entraîneur sur ce créneau.
+         */
+
+        const lignesMoi =
+            creneauActif.lignes.filter(row =>
+
+                String(row.Entraineur) ===
+                idEntraineur
+
+            );
+
+
+        if (present) {
+
+            /*
+             * S'il est déjà présent,
+             * inutile de créer une deuxième ligne.
+             */
+
+            if (!lignesMoi.length) {
+
+                const { error } =
+                    await supabaseClient
+                        .from("Entrainement")
+                        .insert({
+
+                            Date:
+                                String(creneauActif.date),
+
+                            "Créneau":
+                                String(creneauActif.creneau),
+
+                            Entraineur:
+                                idEntraineur
+
+                        });
+
+
+                if (error)
+                    throw error;
+
+            }
+
+        } else {
+
+            /*
+             * ABSENT :
+             * on supprime sa/ses lignes.
+             */
+
+            if (lignesMoi.length) {
+
+                const idsASupprimer =
+                    lignesMoi.map(row => row.id);
+
+
+                const { error } =
+                    await supabaseClient
+                        .from("Entrainement")
+                        .delete()
+                        .in("id", idsASupprimer);
+
+
+                if (error)
+                    throw error;
+
+            }
+
+        }
+
+
+        fermerModal();
+
+
+        /*
+         * Recharge les données depuis Supabase.
+         */
+
+        await chargerApplication();
+
+
+    } catch(e) {
+
+        console.error(e);
+
+        alert(
+            "Erreur lors de la modification :\n" +
+            e.message
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   DECONNEXION
+   ========================================================= */
+
+function deconnexion() {
+
+    localStorage.removeItem(
+        "roller_entraineur"
+    );
+
+    entraineurConnecte = null;
+
+    document.getElementById("app").style.display =
+        "none";
+
+    afficherLogin();
+
+}
+
+
+/* =========================================================
+   FERMER MODAL
+   ========================================================= */
+
+function fermerModal() {
+
+    document.getElementById("modalFond").style.display =
+        "none";
+
+    creneauActif = null;
+
+}
+
+
+/* =========================================================
+   IDENTIFICATION "MOI"
+   ========================================================= */
+
+function estMoi(id) {
+
+    if (!entraineurConnecte)
+        return false;
+
+    return String(id) ===
+           String(entraineurConnecte.id);
+
+}
+
+
+/* =========================================================
+   FORMAT DATE
+   ========================================================= */
+
+function formatDate(date) {
+
+    if (!date)
+        return "";
+
+    const texte =
+        String(date).trim();
+
+
+    /*
+     * YYYY-MM-DD
+     */
+
+    let m =
+        texte.match(
+            /^(\d{4})-(\d{2})-(\d{2})$/
+        );
+
+    if (m) {
+
+        const d =
+            new Date(
+                Number(m[1]),
+                Number(m[2]) - 1,
+                Number(m[3])
+            );
+
+        return d.toLocaleDateString(
+            "fr-FR",
+            {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric"
+            }
+        );
+
+    }
+
+
+    /*
+     * DD/MM/YYYY
+     */
+
+    m =
+        texte.match(
+            /^(\d{2})\/(\d{2})\/(\d{4})$/
+        );
+
+    if (m) {
+
+        const d =
+            new Date(
+                Number(m[3]),
+                Number(m[2]) - 1,
+                Number(m[1])
+            );
+
+        return d.toLocaleDateString(
+            "fr-FR",
+            {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric"
+            }
+        );
+
+    }
+
+
+    return texte;
+
+}
+
+
+/* =========================================================
+   TRI DES DATES
+   ========================================================= */
+
+function dateComparable(date) {
+
+    const texte =
+        String(date).trim();
+
+
+    /*
+     * YYYY-MM-DD
+     */
+
+    let m =
+        texte.match(
+            /^(\d{4})-(\d{2})-(\d{2})$/
+        );
+
+    if (m) {
+
+        return new Date(
+            Number(m[1]),
+            Number(m[2]) - 1,
+            Number(m[3])
+        ).getTime();
+
+    }
+
+
+    /*
+     * DD/MM/YYYY
+     */
+
+    m =
+        texte.match(
+            /^(\d{2})\/(\d{2})\/(\d{4})$/
+        );
+
+    if (m) {
+
+        return new Date(
+            Number(m[3]),
+            Number(m[2]) - 1,
+            Number(m[1])
+        ).getTime();
+
+    }
+
+
+    return 0;
+
+}
+
+
+/* =========================================================
+   SECURITE HTML
+   ========================================================= */
+
+function esc(value) {
+
+    return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+
+}
+
+
+/* =========================================================
+   FERMETURE MODAL EN CLIQUANT EN DEHORS
+   ========================================================= */
+
+document
+    .getElementById("modalFond")
+    .addEventListener("click", function(e) {
+
+        if (e.target === this)
+            fermerModal();
+
+    });
+
+</script>
+
+</body>
+</html>
