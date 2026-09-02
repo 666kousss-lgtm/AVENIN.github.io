@@ -525,31 +525,27 @@ button {
    CONFIGURATION SUPABASE
    ========================================================= */
 
-const SUPABASE_URL =
-    "https://vmvwilwltepayklrwmci.supabase.co";
+
+    import { createClient } from '@supabase/supabase-js'
+const supabaseUrl = 'https://vmvwilwltepayklrwmci.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabaseClient = createClient(supabaseUrl, supabaseKey)
 
 
-/*
- * IMPORTANT :
- *
- * Utilise ici ta SUPABASE_PUBLISHABLE_KEY.
- *
- * NE METS PAS :
- *
- * sb_secret_...
- *
- * La clé secret ne doit jamais être publiée sur GitHub.
- */
-
-const SUPABASE_KEY =
-    "https://vmvwilwltepayklrwmci.supabase.co/rest/v1/";
+    
+//const SUPABASE_URL =
+//    "https://vmvwilwltepayklrwmci.supabase.co";
 
 
-const supabaseClient =
-    supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-    );
+//const SUPABASE_KEY =
+//    "https://vmvwilwltepayklrwmci.supabase.co/rest/v1/";
+
+
+//const supabaseClient =
+//    supabase.createClient(
+//        SUPABASE_URL,
+//        SUPABASE_KEY
+//    );
 
 
 /* =========================================================
