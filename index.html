@@ -176,14 +176,10 @@
         }
 
         .bulle {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
+            padding: 8px 12px;
+            border-radius: 20px;
             background: #222;
             color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             font-size: 13px;
             font-weight: bold;
         }
@@ -312,7 +308,7 @@
 
     <div id="login">
         <div class="login-box">
-            <h1>🛼 Roller Club V1</h1>
+            <h1>🛼 Roller Club</h1>
 
             <p>Entrez votre mot de passe</p>
 
@@ -409,13 +405,6 @@
     </div>
 
     <script>
-        /*
-         * Configuration Supabase pour une page HTML utilisant le CDN.
-         *
-         * Utilisez une clé Publishable ou anon.
-         * Ne mettez jamais une clé service_role ici.
-         */
-
         const SUPABASE_URL =
             "https://vmvwilwltepayklrwmci.supabase.co";
 
@@ -430,7 +419,6 @@
 
 
         let entraineurConnecte = null;
-        let entraineurs = [];
         let entrainements = [];
         let creneauActif = null;
 
@@ -438,72 +426,21 @@
         document.addEventListener(
             "DOMContentLoaded",
             async function () {
-                document
-                    .getElementById("btnConnexion")
-                    .addEventListener(
-                        "click",
-                        connexion
-                    );
+                document.getElementById("btnConnexion").addEventListener("click", connexion);
+                document.getElementById("btnDeconnexion").addEventListener("click", deconnexion);
+                document.getElementById("btnPresent").addEventListener("click", function () { modifierPresence(true); });
+                document.getElementById("btnAbsent").addEventListener("click", function () { modifierPresence(false); });
+                document.getElementById("btnFermer").addEventListener("click", fermerModal);
 
-                document
-                    .getElementById("btnDeconnexion")
-                    .addEventListener(
-                        "click",
-                        deconnexion
-                    );
+                document.getElementById("motDePasse").addEventListener("keydown", function (event) {
+                    if (event.key === "Enter") connexion();
+                });
 
-                document
-                    .getElementById("btnPresent")
-                    .addEventListener(
-                        "click",
-                        function () {
-                            modifierPresence(true);
-                        }
-                    );
+                document.getElementById("modalFond").addEventListener("click", function (event) {
+                    if (event.target === this) fermerModal();
+                });
 
-                document
-                    .getElementById("btnAbsent")
-                    .addEventListener(
-                        "click",
-                        function () {
-                            modifierPresence(false);
-                        }
-                    );
-
-                document
-                    .getElementById("btnFermer")
-                    .addEventListener(
-                        "click",
-                        fermerModal
-                    );
-
-                document
-                    .getElementById("motDePasse")
-                    .addEventListener(
-                        "keydown",
-                        function (event) {
-                            if (event.key === "Enter") {
-                                connexion();
-                            }
-                        }
-                    );
-
-                document
-                    .getElementById("modalFond")
-                    .addEventListener(
-                        "click",
-                        function (event) {
-                            if (event.target === this) {
-                                fermerModal();
-                            }
-                        }
-                    );
-
-
-                const sauvegarde =
-                    localStorage.getItem(
-                        "roller_entraineur"
-                    );
+                const sauvegarde = localStorage.getItem("roller_entraineur");
 
                 if (!sauvegarde) {
                     afficherLogin();
@@ -511,28 +448,17 @@
                 }
 
                 try {
-                    entraineurConnecte =
-                        JSON.parse(sauvegarde);
+                    entraineurConnecte = JSON.parse(sauvegarde);
 
-                    if (
-                        !entraineurConnecte ||
-                        !entraineurConnecte.id
-                    ) {
-                        throw new Error(
-                            "Session locale invalide"
-                        );
+                    if (!entraineurConnecte || !entraineurConnecte.Pseudo) {
+                        throw new Error("Session locale invalide");
                     }
 
                     await chargerApplication();
                 } catch (error) {
                     console.error(error);
-
-                    localStorage.removeItem(
-                        "roller_entraineur"
-                    );
-
+                    localStorage.removeItem("roller_entraineur");
                     entraineurConnecte = null;
-
                     afficherLogin();
                 }
             }
@@ -540,41 +466,21 @@
 
 
         function afficherLogin() {
-            document
-                .getElementById("login")
-                .style.display = "flex";
-
-            document
-                .getElementById("app")
-                .style.display = "none";
+            document.getElementById("login").style.display = "flex";
+            document.getElementById("app").style.display = "none";
         }
 
 
         async function connexion() {
-            const input =
-                document.getElementById(
-                    "motDePasse"
-                );
-
-            const erreur =
-                document.getElementById(
-                    "loginErreur"
-                );
-
-            const bouton =
-                document.getElementById(
-                    "btnConnexion"
-                );
-
-            const mdp =
-                input.value.trim();
+            const input = document.getElementById("motDePasse");
+            const erreur = document.getElementById("loginErreur");
+            const bouton = document.getElementById("btnConnexion");
+            const mdp = input.value.trim();
 
             erreur.textContent = "";
 
             if (!mdp) {
-                erreur.textContent =
-                    "Veuillez entrer votre mot de passe.";
-
+                erreur.textContent = "Veuillez entrer votre mot de passe.";
                 return;
             }
 
@@ -582,46 +488,24 @@
             bouton.textContent = "Connexion...";
 
             try {
-                /*
-                 * La colonne MdP est utilisée uniquement
-                 * pour rechercher l'entraîneur connecté.
-                 */
-                const resultat =
-                    await supabaseClient
-                        .from("Entraineur")
-                        .select(
-                            "id,Nom,Mail,MdP,Pseudo"
-                        )
-                        .eq(
-                            "MdP",
-                            mdp
-                        )
-                        .maybeSingle();
+                const resultat = await supabaseClient
+                    .from("Entraineur")
+                    .select("id,Nom,Mail,MdP,Pseudo")
+                    .eq("MdP", mdp)
+                    .maybeSingle();
 
-                if (resultat.error) {
-                    console.error(
-                        "Erreur Supabase lors de la connexion :",
-                        resultat.error
-                    );
-
-                    throw resultat.error;
-                }
+                if (resultat.error) throw resultat.error;
 
                 if (!resultat.data) {
-                    erreur.textContent =
-                        "Mot de passe incorrect.";
-
+                    erreur.textContent = "Mot de passe incorrect.";
                     return;
                 }
 
-                entraineurConnecte =
-                    resultat.data;
+                entraineurConnecte = resultat.data;
 
                 localStorage.setItem(
                     "roller_entraineur",
-                    JSON.stringify(
-                        entraineurConnecte
-                    )
+                    JSON.stringify(entraineurConnecte)
                 );
 
                 input.value = "";
@@ -629,15 +513,8 @@
                 await chargerApplication();
 
             } catch (error) {
-                console.error(
-                    "Erreur de connexion :",
-                    error
-                );
-
-                erreur.textContent =
-                    error.message ||
-                    "Impossible de contacter Supabase.";
-
+                console.error("Erreur de connexion :", error);
+                erreur.textContent = error.message || "Impossible de contacter Supabase.";
             } finally {
                 bouton.disabled = false;
                 bouton.textContent = "Se connecter";
@@ -646,496 +523,229 @@
 
 
         async function chargerApplication() {
-            document
-                .getElementById("login")
-                .style.display = "none";
+            document.getElementById("login").style.display = "none";
+            document.getElementById("app").style.display = "block";
 
-            document
-                .getElementById("app")
-                .style.display = "block";
+            document.getElementById("profil").textContent =
+                "Connecté : " + (entraineurConnecte.Pseudo || entraineurConnecte.Nom);
 
-            document
-                .getElementById("profil")
-                .textContent =
-                    "Connecté : " +
-                    (
-                        entraineurConnecte.Pseudo ||
-                        entraineurConnecte.Nom ||
-                        entraineurConnecte.id
-                    );
-
-            document
-                .getElementById("contenu")
-                .innerHTML =
-                    `
-                    <div class="chargement">
-                        Chargement...
-                    </div>
-                    `;
+            document.getElementById("contenu").innerHTML =
+                '<div class="chargement">Chargement...</div>';
 
             try {
-                /*
-                 * Ne pas charger MdP ici.
-                 * Il est inutile pour afficher les entraîneurs.
-                 */
-                const resultatEntraineurs =
-                    await supabaseClient
-                        .from("Entraineur")
-                        .select(
-                            "id,Nom,Mail,Pseudo"
-                        )
-                        .order("id");
+                const resultatEntrainements = await supabaseClient
+                    .from("Entrainement")
+                    .select('id,Date,"Créneau",Entraineur')
+                    .order("Date")
+                    .order("Créneau");
 
-                if (resultatEntraineurs.error) {
-                    throw resultatEntraineurs.error;
-                }
+                if (resultatEntrainements.error) throw resultatEntrainements.error;
 
-                entraineurs =
-                    resultatEntraineurs.data || [];
-
-
-                const resultatEntrainements =
-                    await supabaseClient
-                        .from("Entrainement")
-                        .select(
-                            'id,Date,"Créneau",Entraineur'
-                        )
-                        .order("Date")
-                        .order("Créneau");
-
-                if (resultatEntrainements.error) {
-                    throw resultatEntrainements.error;
-                }
-
-                entrainements =
-                    resultatEntrainements.data || [];
+                entrainements = resultatEntrainements.data || [];
 
                 afficherCreneaux();
 
             } catch (error) {
-                console.error(
-                    "Erreur de chargement :",
-                    error
-                );
+                console.error("Erreur de chargement :", error);
 
-                document
-                    .getElementById("contenu")
-                    .innerHTML =
-                    `
-                    <div class="erreur">
-                        <strong>
-                            Erreur de chargement
-                        </strong>
-
-                        <br><br>
-
-                        ${esc(
-                            error.message ||
-                            "Erreur inconnue"
-                        )}
-                    </div>
-                    `;
+                document.getElementById("contenu").innerHTML =
+                    '<div class="erreur"><strong>Erreur de chargement</strong><br><br>' +
+                    esc(error.message || "Erreur inconnue") + '</div>';
             }
+        }
+
+
+        /*
+         * Lit la colonne Entraineur (texte, ex: "CA, TD") et renvoie
+         * un tableau de pseudos propres, sans doublons ni valeurs vides.
+         */
+        function parserPseudos(valeur) {
+            return String(valeur ?? "")
+                .split(",")
+                .map(function (p) { return p.trim(); })
+                .filter(function (p) { return p.length > 0; });
         }
 
 
         function afficherCreneaux() {
-            const contenu =
-                document.getElementById(
-                    "contenu"
-                );
+            const contenu = document.getElementById("contenu");
 
             if (!entrainements.length) {
                 contenu.innerHTML =
-                    `
-                    <div class="chargement">
-                        Aucun entraînement trouvé
-                        dans la table Entrainement.
-                    </div>
-                    `;
-
+                    '<div class="chargement">Aucun entraînement trouvé dans la table Entrainement.</div>';
                 return;
             }
 
-
             const groupes = new Map();
 
-            entrainements.forEach(
-                function (row) {
-                    const date =
-                        String(
-                            row.Date ?? ""
-                        ).trim();
+            entrainements.forEach(function (row) {
+                const date = String(row.Date ?? "").trim();
+                const creneau = String(row["Créneau"] ?? "").trim();
+                const cle = date + "||" + creneau;
 
-                    const creneau =
-                        String(
-                            row["Créneau"] ?? ""
-                        ).trim();
-
-                    const cle =
-                        date +
-                        "||" +
-                        creneau;
-
-                    if (!groupes.has(cle)) {
-                        groupes.set(
-                            cle,
-                            {
-                                date: date,
-                                creneau: creneau,
-                                lignes: []
-                            }
-                        );
-                    }
-
-                    groupes
-                        .get(cle)
-                        .lignes
-                        .push(row);
+                if (!groupes.has(cle)) {
+                    groupes.set(cle, { date: date, creneau: creneau, lignes: [] });
                 }
-            );
 
+                groupes.get(cle).lignes.push(row);
+            });
 
-            const liste =
-                Array.from(
-                    groupes.values()
-                );
+            const liste = Array.from(groupes.values());
 
-            liste.sort(
-                function (a, b) {
-                    const dateA =
-                        dateComparable(a.date);
-
-                    const dateB =
-                        dateComparable(b.date);
-
-                    if (dateA !== dateB) {
-                        return dateA - dateB;
-                    }
-
-                    return a.creneau.localeCompare(
-                        b.creneau,
-                        "fr",
-                        {
-                            numeric: true
-                        }
-                    );
-                }
-            );
-
+            liste.sort(function (a, b) {
+                const dateA = dateComparable(a.date);
+                const dateB = dateComparable(b.date);
+                if (dateA !== dateB) return dateA - dateB;
+                return a.creneau.localeCompare(b.creneau, "fr", { numeric: true });
+            });
 
             const jours = new Map();
 
-            liste.forEach(
-                function (creneau) {
-                    if (!jours.has(creneau.date)) {
-                        jours.set(
-                            creneau.date,
-                            []
-                        );
-                    }
-
-                    jours
-                        .get(creneau.date)
-                        .push(creneau);
-                }
-            );
-
+            liste.forEach(function (creneau) {
+                if (!jours.has(creneau.date)) jours.set(creneau.date, []);
+                jours.get(creneau.date).push(creneau);
+            });
 
             let html = "";
 
-            jours.forEach(
-                function (creneaux, date) {
+            jours.forEach(function (creneaux, date) {
+                html += '<div class="jour"><div class="jour-titre">' + esc(formatDate(date)) + '</div>';
+
+                creneaux.forEach(function (creneau) {
+                    const pseudosSet = new Set();
+
+                    creneau.lignes.forEach(function (row) {
+                        parserPseudos(row.Entraineur).forEach(function (p) { pseudosSet.add(p); });
+                    });
+
+                    const pseudosUniques = Array.from(pseudosSet);
+
+                    let bulles = "";
+
+                    if (!pseudosUniques.length) {
+                        bulles = '<span class="aucun">Aucun entraîneur</span>';
+                    } else {
+                        bulles = pseudosUniques.map(function (pseudo) {
+                            return '<div class="bulle ' + (estMoi(pseudo) ? "moi" : "") + '">' + esc(pseudo) + '</div>';
+                        }).join("");
+                    }
+
                     html +=
-                        `
-                        <div class="jour">
-                            <div class="jour-titre">
-                                ${esc(formatDate(date))}
-                            </div>
-                        `;
+                        '<div class="creneau-card" data-date="' + esc(creneau.date) + '" data-creneau="' + esc(creneau.creneau) + '">' +
+                            '<div class="creneau-haut">' +
+                                '<div class="heure">' + esc(creneau.creneau) + '</div>' +
+                                '<div class="nb">' + pseudosUniques.length + ' entraîneur' + (pseudosUniques.length > 1 ? "s" : "") + '</div>' +
+                            '</div>' +
+                            '<div class="entraineurs">' + bulles + '</div>' +
+                        '</div>';
+                });
 
-                    creneaux.forEach(
-                        function (creneau) {
-                            const ids =
-                                creneau.lignes.map(
-                                    function (row) {
-                                        return String(
-                                            row.Entraineur
-                                        );
-                                    }
-                                );
-
-                            const idsUniques =
-                                [
-                                    ...new Set(ids)
-                                ];
-
-                            let bulles = "";
-
-                            if (!idsUniques.length) {
-                                bulles =
-                                    `
-                                    <span class="aucun">
-                                        Aucun entraîneur
-                                    </span>
-                                    `;
-                            } else {
-                                bulles =
-                                    idsUniques
-                                        .map(
-                                            function (id) {
-                                                return `
-                                                <div
-                                                    class="bulle ${
-                                                        estMoi(id)
-                                                            ? "moi"
-                                                            : ""
-                                                    }"
-                                                    title="Entraîneur ${esc(id)}"
-                                                >
-                                                    ${esc(id)}
-                                                </div>
-                                                `;
-                                            }
-                                        )
-                                        .join("");
-                            }
-
-                            html +=
-                                `
-                                <div
-                                    class="creneau-card"
-                                    data-date="${esc(creneau.date)}"
-                                    data-creneau="${esc(creneau.creneau)}"
-                                >
-                                    <div class="creneau-haut">
-                                        <div class="heure">
-                                            ${esc(creneau.creneau)}
-                                        </div>
-
-                                        <div class="nb">
-                                            ${idsUniques.length}
-                                            entraîneur${
-                                                idsUniques.length > 1
-                                                    ? "s"
-                                                    : ""
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <div class="entraineurs">
-                                        ${bulles}
-                                    </div>
-                                </div>
-                                `;
-                        }
-                    );
-
-                    html += "</div>";
-                }
-            );
+                html += "</div>";
+            });
 
             contenu.innerHTML = html;
 
-
-            document
-                .querySelectorAll(".creneau-card")
-                .forEach(
-                    function (card) {
-                        card.addEventListener(
-                            "click",
-                            function () {
-                                const date =
-                                    card.dataset.date;
-
-                                const creneau =
-                                    card.dataset.creneau;
-
-                                const groupe =
-                                    groupes.get(
-                                        date +
-                                        "||" +
-                                        creneau
-                                    );
-
-                                if (groupe) {
-                                    ouvrirCreneau(groupe);
-                                }
-                            }
-                        );
-                    }
-                );
+            document.querySelectorAll(".creneau-card").forEach(function (card) {
+                card.addEventListener("click", function () {
+                    const date = card.dataset.date;
+                    const creneau = card.dataset.creneau;
+                    const groupe = groupes.get(date + "||" + creneau);
+                    if (groupe) ouvrirCreneau(groupe);
+                });
+            });
         }
 
 
         function ouvrirCreneau(creneau) {
-            creneauActif =
-                creneau;
+            creneauActif = creneau;
 
-            document
-                .getElementById("modalTitre")
-                .textContent =
-                    creneau.creneau;
+            document.getElementById("modalTitre").textContent = creneau.creneau;
+            document.getElementById("modalInfo").textContent = formatDate(creneau.date);
 
-            document
-                .getElementById("modalInfo")
-                .textContent =
-                    formatDate(creneau.date);
+            const pseudosSet = new Set();
 
+            creneau.lignes.forEach(function (row) {
+                parserPseudos(row.Entraineur).forEach(function (p) { pseudosSet.add(p); });
+            });
 
-            const ids =
-                creneau.lignes.map(
-                    function (row) {
-                        return String(
-                            row.Entraineur
-                        );
-                    }
-                );
+            const pseudosUniques = Array.from(pseudosSet);
+            const zone = document.getElementById("modalEntraineurs");
 
-            const idsUniques =
-                [
-                    ...new Set(ids)
-                ];
-
-            const zone =
-                document.getElementById(
-                    "modalEntraineurs"
-                );
-
-            if (!idsUniques.length) {
-                zone.innerHTML =
-                    `
-                    <span class="aucun">
-                        Aucun entraîneur inscrit
-                    </span>
-                    `;
+            if (!pseudosUniques.length) {
+                zone.innerHTML = '<span class="aucun">Aucun entraîneur inscrit</span>';
             } else {
-                zone.innerHTML =
-                    idsUniques
-                        .map(
-                            function (id) {
-                                return `
-                                <div
-                                    class="modal-bulle ${
-                                        estMoi(id)
-                                            ? "moi"
-                                            : ""
-                                    }"
-                                >
-                                    ${esc(id)}
-                                    ${
-                                        estMoi(id)
-                                            ? " (moi)"
-                                            : ""
-                                    }
-                                </div>
-                                `;
-                            }
-                        )
-                        .join("");
+                zone.innerHTML = pseudosUniques.map(function (pseudo) {
+                    return '<div class="modal-bulle ' + (estMoi(pseudo) ? "moi" : "") + '">' +
+                        esc(pseudo) + (estMoi(pseudo) ? " (moi)" : "") + '</div>';
+                }).join("");
             }
 
-            document
-                .getElementById("modalFond")
-                .style.display = "flex";
+            document.getElementById("modalFond").style.display = "flex";
         }
 
 
         async function modifierPresence(present) {
-            if (
-                !creneauActif ||
-                !entraineurConnecte
-            ) {
+            if (!creneauActif || !entraineurConnecte) return;
+
+            const monPseudo = entraineurConnecte.Pseudo;
+
+            if (!monPseudo) {
+                alert("Ton compte n'a pas de pseudo défini dans la table Entraineur.");
                 return;
             }
 
-            const idEntraineur =
-                entraineurConnecte.id;
+            // ligne "canonique" du créneau (la plus ancienne) : c'est elle qu'on met à jour
+            const lignes = creneauActif.lignes.slice().sort(function (a, b) { return a.id - b.id; });
+            const ligneCible = lignes[0];
+            const lignesEnTrop = lignes.slice(1);
 
-            const lignesMoi =
-                creneauActif.lignes.filter(
-                    function (row) {
-                        return String(
-                            row.Entraineur
-                        ) === String(
-                            idEntraineur
-                        );
-                    }
-                );
+            const pseudosSet = new Set();
+            lignes.forEach(function (row) {
+                parserPseudos(row.Entraineur).forEach(function (p) { pseudosSet.add(p); });
+            });
 
-            const boutonPresent =
-                document.getElementById(
-                    "btnPresent"
-                );
+            if (present) {
+                pseudosSet.add(monPseudo);
+            } else {
+                pseudosSet.delete(monPseudo);
+            }
 
-            const boutonAbsent =
-                document.getElementById(
-                    "btnAbsent"
-                );
+            const nouvelleValeur = Array.from(pseudosSet).join(", ");
+
+            const boutonPresent = document.getElementById("btnPresent");
+            const boutonAbsent = document.getElementById("btnAbsent");
 
             boutonPresent.disabled = true;
             boutonAbsent.disabled = true;
 
             try {
-                if (present) {
-                    if (!lignesMoi.length) {
-                        const resultat =
-                            await supabaseClient
-                                .from("Entrainement")
-                                .insert({
-                                    Date:
-                                        creneauActif.date,
+                const resultat = await supabaseClient
+                    .from("Entrainement")
+                    .update({ Entraineur: nouvelleValeur })
+                    .eq("id", ligneCible.id);
 
-                                    "Créneau":
-                                        creneauActif.creneau,
+                if (resultat.error) throw resultat.error;
 
-                                    Entraineur:
-                                        idEntraineur
-                                });
+                // Nettoyage : s'il restait d'anciennes lignes en double pour ce créneau, on les supprime
+                if (lignesEnTrop.length) {
+                    const idsASupprimer = lignesEnTrop.map(function (row) { return row.id; });
 
-                        if (resultat.error) {
-                            throw resultat.error;
-                        }
-                    }
-                } else {
-                    if (lignesMoi.length) {
-                        const ids =
-                            lignesMoi.map(
-                                function (row) {
-                                    return row.id;
-                                }
-                            );
+                    const resultatSuppression = await supabaseClient
+                        .from("Entrainement")
+                        .delete()
+                        .in("id", idsASupprimer);
 
-                        const resultat =
-                            await supabaseClient
-                                .from("Entrainement")
-                                .delete()
-                                .in("id", ids);
-
-                        if (resultat.error) {
-                            throw resultat.error;
-                        }
+                    if (resultatSuppression.error) {
+                        console.error("Erreur lors du nettoyage des doublons :", resultatSuppression.error);
                     }
                 }
 
                 fermerModal();
-
                 await chargerApplication();
 
             } catch (error) {
-                console.error(
-                    "Erreur lors de la modification :",
-                    error
-                );
-
-                alert(
-                    "Erreur lors de la modification :\n\n" +
-                    (
-                        error.message ||
-                        "Erreur inconnue"
-                    )
-                );
-
+                console.error("Erreur lors de la modification :", error);
+                alert("Erreur lors de la modification :\n\n" + (error.message || "Erreur inconnue"));
             } finally {
                 boutonPresent.disabled = false;
                 boutonAbsent.disabled = false;
@@ -1144,97 +754,42 @@
 
 
         function deconnexion() {
-            localStorage.removeItem(
-                "roller_entraineur"
-            );
-
+            localStorage.removeItem("roller_entraineur");
             entraineurConnecte = null;
-            entraineurs = [];
             entrainements = [];
             creneauActif = null;
 
-            document
-                .getElementById("app")
-                .style.display = "none";
-
+            document.getElementById("app").style.display = "none";
             afficherLogin();
         }
 
 
         function fermerModal() {
-            document
-                .getElementById("modalFond")
-                .style.display = "none";
-
+            document.getElementById("modalFond").style.display = "none";
             creneauActif = null;
         }
 
 
-        function estMoi(id) {
-            if (!entraineurConnecte) {
-                return false;
-            }
-
-            return String(id) === String(
-                entraineurConnecte.id
-            );
+        function estMoi(pseudo) {
+            if (!entraineurConnecte) return false;
+            return String(pseudo) === String(entraineurConnecte.Pseudo);
         }
 
 
         function formatDate(date) {
-            if (!date) {
-                return "";
+            if (!date) return "";
+            const texte = String(date).trim();
+
+            let m = texte.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (m) {
+                const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+                return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
             }
 
-            const texte =
-                String(date).trim();
-
-            let correspondance =
-                texte.match(
-                    /^(\d{4})-(\d{2})-(\d{2})$/
-                );
-
-            if (correspondance) {
-                const d =
-                    new Date(
-                        Number(correspondance[1]),
-                        Number(correspondance[2]) - 1,
-                        Number(correspondance[3])
-                    );
-
-                return d.toLocaleDateString(
-                    "fr-FR",
-                    {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric"
-                    }
-                );
-            }
-
-            correspondance =
-                texte.match(
-                    /^(\d{2})\/(\d{2})\/(\d{4})$/
-                );
-
-            if (correspondance) {
-                const d =
-                    new Date(
-                        Number(correspondance[3]),
-                        Number(correspondance[2]) - 1,
-                        Number(correspondance[1])
-                    );
-
-                return d.toLocaleDateString(
-                    "fr-FR",
-                    {
-                        weekday: "long",
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric"
-                    }
-                );
+            m = texte.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (m) {
+                const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+                return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
             }
 
             return texte;
@@ -1242,34 +797,13 @@
 
 
         function dateComparable(date) {
-            const texte =
-                String(date ?? "").trim();
+            const texte = String(date ?? "").trim();
 
-            let correspondance =
-                texte.match(
-                    /^(\d{4})-(\d{2})-(\d{2})$/
-                );
+            let m = texte.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])).getTime();
 
-            if (correspondance) {
-                return new Date(
-                    Number(correspondance[1]),
-                    Number(correspondance[2]) - 1,
-                    Number(correspondance[3])
-                ).getTime();
-            }
-
-            correspondance =
-                texte.match(
-                    /^(\d{2})\/(\d{2})\/(\d{4})$/
-                );
-
-            if (correspondance) {
-                return new Date(
-                    Number(correspondance[3]),
-                    Number(correspondance[2]) - 1,
-                    Number(correspondance[1])
-                ).getTime();
-            }
+            m = texte.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+            if (m) return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1])).getTime();
 
             return 0;
         }
